@@ -1,0 +1,104 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String       @id @default(uuid())
+  email     String       @unique
+  name      String?
+  createdAt DateTime     @default(now())
+  alerts    PriceAlert[]
+}
+
+model Search {
+  id            String         @id @default(uuid())
+  origin        String
+  destination   String
+  departureDate String
+  returnDate    String?
+  passengers    Int            @default(1)
+  cabinClass    String         @default("economy")
+  isStudent     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  clicks        Click[]
+  flightResults FlightResult[]
+}
+
+model FlightResult {
+  id             String   @id @default(uuid())
+  searchId       String
+  flightNumber   String
+  airline        String
+  airlineCode    String
+  origin         String
+  destination    String
+  departureTime  DateTime
+  arrivalTime    DateTime
+  duration       Int
+  stops          Int      @default(0)
+  minPrice       Float
+  currency       String   @default("INR")
+  rawData        String?
+  createdAt      DateTime @default(now())
+
+  search         Search   @relation(fields: [searchId], references: [id], onDelete: Cascade)
+}
+
+model Provider {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  name            String
+  type            String   // "airline" | "ota" | "aggregator"
+  enabled         Boolean  @default(true)
+  apiStatus       String   @default("demo") // "live" | "demo" | "degraded"
+  affiliateStatus String   @default("active")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  clicks          Click[]
+}
+
+model Click {
+  id             String    @id @default(uuid())
+  providerCode   String
+  flightNumber   String
+  displayedPrice Float
+  currency       String    @default("INR")
+  bookingUrl     String
+  searchId       String?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime  @default(now())
+
+  provider       Provider? @relation(fields: [providerCode], references: [code])
+  search         Search?   @relation(fields: [searchId], references: [id])
+}
+
+model PriceHistory {
+  id          String   @id @default(uuid())
+  origin      String
+  destination String
+  date        String
+  airlineCode String
+  price       Float
+  currency    String   @default("INR")
+  recordedAt  DateTime @default(now())
+}
+
+model PriceAlert {
+  id            String   @id @default(uuid())
+  userId        String?
+  email         String
+  origin        String
+  destination   String
+  departureDate String
+  targetPrice   Float
+  currency      String   @default("INR")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  user          User?    @relation(fields: [userId], references: [id])
+}
